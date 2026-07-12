@@ -1,0 +1,17 @@
+# Python virtual environment
+venv/
+
+# Downloaded model weights (auto-download on first run)
+*.pt
+
+# Python cache
+__pycache__/
+*.pyc
+
+# macOS junk
+.DS_Store
+
+# Photos are kept out of the public repo (run the pipeline on your own!)
+*.jpg
+*.jpeg
+*.png
