@@ -1,4 +1,4 @@
-# Robot Perception Pipeline 🤖👀
+# Robot Perception Pipeline
 
 Teaching a computer to look at a single photo and understand it the way a robot would need to:
 **what** objects are there, **where** they are, and **what the people in it are doing**.
