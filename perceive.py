@@ -20,6 +20,7 @@ How to run it:
   python perceive.py cooking.jpg    <- any photo you want
 """
 
+import json
 import re
 import sys
 import torch
@@ -270,6 +271,23 @@ for i, obj in enumerate(objects):
 out_path = 'detected_' + image_path.split('/')[-1].rsplit('.', 1)[0] + '.jpg'
 drawn.save(out_path)
 
+# ---------- Save everything the pipeline learned to a JSON file ----------
+# (affordances.py reads this file, so the robot's "brain" can reason about
+#  the scene without re-running all the vision models)
+report = {
+    'image': image_path,
+    'objects': [
+        {'name': o['name'], 'where': where_in_photo(o['box']), 'box': o['box']}
+        for o in objects
+    ],
+    'relations': relations,
+    'scene': captions[0],
+    'action': action_description,
+}
+json_path = 'perception_' + image_path.split('/')[-1].rsplit('.', 1)[0] + '.json'
+with open(json_path, 'w') as f:
+    json.dump(report, f, indent=2)
+
 # ---------- FINAL REPORT ----------
 print("\n" + "=" * 50)
 print("📋 FINAL REPORT")
@@ -293,3 +311,5 @@ else:
     print("\nNo person detected, so no action to describe.")
 
 print(f"\n🖼️  Photo with boxes drawn: {out_path}")
+print(f"💾 Scene facts saved for the robot brain: {json_path}")
+print(f"   (next step: python affordances.py {json_path})")

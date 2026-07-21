@@ -171,3 +171,39 @@ Known weaknesses (found by testing):
   ("brushing her teeth" — there was no toothbrush)
 - 2D boxes can't tell "inside" from "in front of" (no depth in a photo) —
   it said "the knife is on/inside the man" because he leans over the table
+
+New in the Phase 1d update: perceive.py now also SAVES its results to
+`perception_<photo>.json` using `json.dump(report, f)` — turning Python
+dicts/lists into a text file another program can read later.
+
+### affordances.py — the robot's reasoning brain (Phase 1d)
+What it does: reads the scene facts perceive.py saved, feeds them to a
+small language model (Qwen 2.5, running entirely on this computer —
+free, no account, no API key), and asks what a robot could DO here.
+
+The new ideas in this file:
+
+- **`json.load(f)`** — the reverse of `json.dump`: reads the saved file
+  back into Python dicts and lists.
+- **Building the prompt** — f-strings assemble the scene facts into one
+  big instruction text. The prompt gives the model a ROLE (robot brain),
+  the FACTS (objects, positions, relations, action), and a FORMAT
+  (affordances / risks / useful task).
+- **A language model in the same 4-beat pattern:**
+  ```python
+  tokenizer = AutoTokenizer.from_pretrained(...)          # 1. load
+  model = AutoModelForCausalLM.from_pretrained(...)       #    load
+  text = tokenizer.apply_chat_template(chat, ...)         # 2. prepare
+  output = model.generate(**inputs, max_new_tokens=600)   # 3. run
+  answer = tokenizer.decode(output[0][...], ...)          # 4. decode
+  ```
+- **`apply_chat_template`** — chat models were trained on conversations
+  wrapped in special markers (who's the user, where the reply starts).
+  This function does that wrapping so you don't have to know the markers.
+- **Slicing off the prompt** — `output[0][inputs.input_ids.shape[1]:]`
+  looks scary but just means: the model's output contains our prompt
+  PLUS its answer, so skip the first N tokens (the prompt) and keep
+  the rest (the answer).
+- **The trade-off** — a 1.5B-knob local model is free and private but
+  much less smart than a cloud model like Claude. Same small-vs-big
+  trade-off as YOLO vs LLaVA, now on the language side.

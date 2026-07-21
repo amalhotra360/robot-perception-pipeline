@@ -82,7 +82,8 @@ it runs on a regular laptop, just takes a minute or two per photo.
 
 | File | What it is |
 |---|---|
-| `perceive.py` | **The main pipeline** — objects + boxes + relationships + actions |
+| `perceive.py` | **The main pipeline** — objects + boxes + relationships + actions (saves scene facts to JSON) |
+| `affordances.py` | **The robot's reasoning brain** — a free local LLM (Qwen 2.5) reads the scene facts and plans what a robot could do |
 | `auto_detect.py` | My own experimental take on the BLIP → OWL-ViT idea (creative captions + regex word extraction) |
 | `detect_objects_and_actions.py` | Earlier version: YOLO + CLIP fact-checking + BLIP |
 | `step1_*.py` | My first experiments with YOLO, BLIP, and LLaVA |
@@ -95,6 +96,6 @@ it runs on a regular laptop, just takes a minute or two per photo.
 - [x] Phase 1a: object detection (YOLO → multi-model pipeline)
 - [x] Phase 1b: spatial relationships from bounding boxes
 - [x] Phase 1c: action recognition ("the person is cutting onions")
-- [ ] Phase 1d: affordances — what could a robot *do* with each object?
+- [x] Phase 1d: affordances — what could a robot *do* with each object? (local LLM reasoning)
 - [ ] Phase 2: video — understanding how scenes change over time
 - [ ] Phase 3: simulation (PyBullet) — perception driving a virtual robot arm

@@ -183,3 +183,67 @@ so the knife's box IS inside his box — in 2D. The photo has no depth, so
 box math can't tell "inside" from "in front of." Understanding 3D space
 from a flat photo needs more than rectangles — that's a preview of why
 robots use depth cameras.
+
+---
+
+# Affordances (Phase 1d) — The Robot's Brain
+
+An **affordance** is what an object lets you DO with it: a cup affords
+picking up and drinking from, a knife affords cutting, a chair affords
+sitting on. The word comes from psychology — we see objects in terms of
+what we can do with them, and a robot needs to as well.
+
+**The architecture — eyes vs brain:**
+
+```
+perceive.py  ->  perception_<photo>.json  ->  affordances.py
+(the EYES:        (structured facts          (the BRAIN: what
+what & where)      saved to a file)           can I do here?)
+```
+
+This separation is real robotics design: perception turns messy pixels
+into clean facts, then reasoning works with the facts — it never has to
+look at pixels. The JSON file in between means the brain can think about
+a scene without re-running all the slow vision models.
+
+**Why a language model for the brain?** Affordances need world
+knowledge: knowing that knives cut, that things near a table edge can
+fall, that you shouldn't grab a knife by the blade. That knowledge isn't
+in the photo — it's in language. So the reasoning step feeds the scene
+facts to a language model and asks: "you're a robot with one gripper
+arm — what could you do here, what's risky, what would be useful?"
+
+**Cloud API vs local model — a real engineering decision:**
+
+| Option | Cost | Quality | Privacy |
+|---|---|---|---|
+| Big cloud model (e.g. Claude, via an API) | pennies per request, needs an account + card | smartest | your data goes to a server |
+| Small local model (Qwen 2.5, 1.5B) | free forever | good enough for simple reasoning | everything stays on my laptop |
+
+I chose the **free local model** (Qwen 2.5 with 1.5 billion knobs, run
+through the same `transformers` library as BLIP). It's the same
+trade-off as YOLO vs LLaVA all over again: small-and-free vs
+big-and-smart. Knowing when "good enough" is actually good enough is
+an engineering skill in itself.
+
+**What I learned about prompting a language model:**
+- The pattern is simple: build a text prompt -> run the model -> read
+  the reply. The craft is in writing a good prompt.
+- Good prompts give a ROLE ("you are the reasoning brain of a robot
+  with one gripper arm"), the FACTS (objects, positions, relations),
+  and a clear FORMAT for the answer (numbered sections).
+- Chat models need their input wrapped in a special conversation format —
+  the tokenizer's "chat template" does that wrapping for you.
+
+**The funniest failure of the whole project (so far):** for the photo
+of the man cutting onions, the model listed affordances for the MAN:
+"pick up, push, carry to storage area." And its task plan began with
+"Secure the Man: ensure the man is standing firmly against the wall."
+
+Why this matters: the small model followed my FORMAT perfectly ("2-3
+actions for each detected object") but doesn't have the common sense to
+realize a person isn't a thing you carry to storage. Instructions were
+followed; judgment was missing. Bigger models have more judgment —
+that's a big part of what those extra billions of knobs buy. Real robot
+systems add safety rules on top of the model for exactly this reason:
+never trust the model alone with decisions about people.
