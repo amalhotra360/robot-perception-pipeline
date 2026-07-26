@@ -247,3 +247,61 @@ followed; judgment was missing. Bigger models have more judgment —
 that's a big part of what those extra billions of knobs buy. Real robot
 systems add safety rules on top of the model for exactly this reason:
 never trust the model alone with decisions about people.
+
+---
+
+# Evaluation (Phase 1e) — Real Numbers At Last
+
+Instead of eyeballing results, I scored the pipeline against the truth.
+The recipe (this is how EVERY AI system gets measured):
+
+1. **Ground truth** — I write down what's REALLY in each photo, by hand.
+2. **Detection** — the program writes down what it thinks is there.
+3. **Compare and count** three things:
+   - CORRECT (found a real object)
+   - MADE UP (found something that isn't there — "false positive")
+   - MISSED (a real object it didn't find — "false negative")
+
+**The three scores** (every AI paper reports these):
+- **Precision** = correct / everything it said = "how often it's right"
+- **Recall** = correct / everything really there = "how much it caught"
+- **F1** = one number balancing the two
+
+**My pipeline's report card (baseline):**
+
+| Photo | Precision | Recall | F1 |
+|---|---|---|---|
+| test_image1 | 50% | 30% | 37% |
+| cooking | 56% | 25% | 34% |
+| legos | 33% | 11% | 17% |
+| **Average** | **46%** | **22%** | **29%** |
+
+This is my BASELINE — the number to beat when I improve things later.
+A ~29% F1 for a first hand-built pipeline is an honest starting point.
+
+**What the numbers taught me:**
+
+- **Recall (22%) is the weak spot.** The pipeline misses far more than it
+  makes up. Small objects (eraser, pencil, cucumber, knife) get missed
+  because BLIP never mentions them, so OWL-ViT never looks for them.
+- **The cluttered legos photo scored worst (17%).** More stuff = more to
+  miss. Busy scenes are just harder.
+- **Evaluation itself can have bugs!** My first scorer matched
+  "cutting vegetables" to "table" — because "table" is literally inside
+  "vege-TABLE-s". Lesson: it was comparing letters, not whole words.
+  Fixed it to compare word-by-word. ALWAYS sanity-check your evaluator.
+- **Ground truth is a judgment call.** I listed "smile", "braid", and
+  "girl with two pigtails" as truth — but those aren't objects a detector
+  can box, so they counted as "missed" and dragged recall down. Real
+  datasets define "what counts as an object" BEFORE scoring.
+
+**Ideas to raise the score later** (all measurable now that I have a baseline):
+- Give OWL-ViT a built-in list of common objects so it finds things BLIP
+  forgets to mention (would help recall a lot).
+- Filter out non-object words like "kitchen" and BLIP's "arafed" glitch
+  (would help precision).
+- Lower/raise the box-confidence cutoff and re-measure the trade-off.
+
+**PHASE 1 IS COMPLETE:** the pipeline now sees objects, locates them,
+describes actions, reasons about affordances, AND measures its own
+accuracy. Next up: Phase 2 (video — understanding change over time).

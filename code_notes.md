@@ -207,3 +207,43 @@ The new ideas in this file:
 - **The trade-off** — a 1.5B-knob local model is free and private but
   much less smart than a cloud model like Claude. Same small-vs-big
   trade-off as YOLO vs LLaVA, now on the language side.
+
+### evaluate.py — scoring the pipeline (Phase 1e)
+What it does: compares a hand-written "truth" file (what's really in the
+photo) against a perception_*.json (what the program found), and prints
+precision, recall, and F1.
+
+How to run it:
+  python evaluate.py truth_test_image1.txt perception_test_image1.json
+
+The new ideas in this file:
+
+- **Two input files from the command line** — `sys.argv[1]` and
+  `sys.argv[2]` are the truth file and the results file you type after
+  the script name.
+- **Reading a plain text list** — loop over the file's lines, skip blanks
+  and lines starting with `#` (comments). One object per line.
+- **`clean()`** — tidies a name: lowercase, drop punctuation, remove a
+  trailing "s" so "apples" and "apple" match.
+- **`same_thing(a, b)`** — the heart of it. Decides if two names mean the
+  same object. THREE ways to match:
+  1. exactly equal
+  2. all the words of one appear in the other (compared as WHOLE WORDS —
+     see the bug note below)
+  3. they're both in a hand-written SYNONYMS group (so "telephone" and
+     "phone" count as the same)
+- **The whole-word bug (great lesson):** my first version checked if one
+  name was a substring of the other with `a in b`. That matched "table"
+  inside "vege**table**s"! Fixed by splitting into word sets first:
+  `set(a.split()) <= set(b.split())` — now "table" is not "inside"
+  {cutting, vegetables}. Moral: sanity-check your evaluator, not just
+  your model.
+- **Greedy matching** — each real object can be matched only ONCE, so if
+  the program finds the cactus twice, only one counts as correct and the
+  other becomes a "made up". `truth_left.remove(match)` does this.
+- **The math:**
+  ```python
+  precision = correct / len(detected)   # of what it said, how much was right
+  recall    = correct / len(truth)      # of what's real, how much it caught
+  f1 = 2 * p * r / (p + r)              # balance of the two
+  ```

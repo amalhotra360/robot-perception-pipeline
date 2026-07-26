@@ -1,0 +1,12 @@
+# Ground truth for legos.jpg — what's REALLY in the photo.
+# One object per line. Lines starting with # are ignored.
+# EDIT THIS if I got anything wrong or missed something!
+girl
+pink shirt
+table
+building blocks
+chair
+curtain
+window
+smile
+girl with two pigtails

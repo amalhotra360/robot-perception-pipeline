@@ -1,0 +1,12 @@
+# Ground truth for test_image1.jpeg — what's REALLY in the photo.
+# One object per line. Lines starting with # are ignored.
+cactus
+telephone
+donut
+clock
+lamp
+glasses
+eraser
+pencil
+push pin
+red pen

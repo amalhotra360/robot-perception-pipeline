@@ -1,0 +1,23 @@
+# Ground truth for cooking.jpg — what's REALLY in the photo.
+# One object per line. Lines starting with # are ignored.
+# EDIT THIS if I got anything wrong or missed something!
+woman
+plaid shirt
+white shirt
+table
+red bell pepper
+cucumber
+lettuce
+apple
+lemon
+bowl
+green bottle
+wine bottle
+pumpkin
+blue bowl
+red mug
+jar
+pastries
+plant
+knife
+braid
