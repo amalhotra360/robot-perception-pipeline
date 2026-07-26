@@ -38,6 +38,31 @@ SAME_OBJECT = 0.50    # if two boxes overlap more than this, treat them
 WIGGLE = 0.08         # ignore position differences smaller than 8% of the
                       # photo size when deciding left/right/above/below
 
+# Phase 1f: a built-in list of everyday objects that OWL-ViT ALWAYS looks
+# for, on top of whatever BLIP happens to mention. This catches small things
+# BLIP forgets (knife, pencil...) and should raise RECALL.
+COMMON_OBJECTS = [
+    "person", "chair", "table", "couch", "lamp", "clock", "book", "laptop",
+    "phone", "cup", "mug", "bottle", "bowl", "plate", "fork", "knife",
+    "spoon", "cutting board", "pan", "pot", "jar", "glass", "scissors",
+    "pen", "pencil", "eraser", "plant", "flower", "vase", "picture frame",
+    "bag", "ball", "toy blocks", "remote", "keyboard", "apple", "banana",
+    "orange", "lemon", "carrot", "tomato", "cucumber", "pepper", "lettuce",
+    "onion", "bread", "cake", "donut", "egg", "pumpkin", "shelf", "cup",
+]
+
+# Phase 1f: words that describe a PLACE or the whole scene, not a grabbable
+# object. Filtering these out should raise PRECISION.
+SCENE_WORDS = {"kitchen", "room", "background", "wall", "floor", "ceiling",
+               "scene", "counter", "countertop", "kitchen counter",
+               "living room", "bedroom", "office", "space", "area"}
+
+# Phase 1f: verbs BLIP starts action-phrases with ("cutting vegetables").
+# If a phrase begins with one of these, it's an action, not an object.
+ACTION_VERBS = {"cutting", "brushing", "playing", "holding", "talking",
+                "standing", "sitting", "eating", "drinking", "cooking",
+                "washing", "reading", "writing", "looking", "smiling"}
+
 # ---------- Pick which picture to analyze ----------
 image_path = sys.argv[1] if len(sys.argv) > 1 else 'test_image1.jpeg'
 print(f"🖼️  Analyzing: {image_path}")
@@ -67,6 +92,9 @@ def caption_to_phrases(caption):
     into search words: ['red desk lamp', 'phone', 'cactus']"""
     text = caption.lower()
 
+    # "arafed" is a known BLIP glitch (garbled "a red") — just delete it
+    text = text.replace('arafed ', '').replace('arafed', '')
+
     # remove filler openings
     for junk in ['there is ', 'there are ', 'this is ', 'an image of ',
                  'a picture of ', 'a photo of ']:
@@ -92,9 +120,15 @@ def caption_to_phrases(caption):
         for article in ('a ', 'an ', 'the ', 'some ', 'his ', 'her '):
             if p.startswith(article):
                 p = p[len(article):]
-        # keep short, thing-like phrases only
-        if p and p not in junk_words and len(p.split()) <= 3 and p not in phrases:
-            phrases.append(p)
+
+        first_word = p.split()[0] if p else ''
+        # skip: empty, junk words, whole-scene/place words, action phrases
+        # ("cutting vegetables"), and anything longer than 3 words
+        if (not p or p in junk_words or p in SCENE_WORDS
+                or first_word in ACTION_VERBS
+                or len(p.split()) > 3 or p in phrases):
+            continue
+        phrases.append(p)
     return phrases
 
 
@@ -185,8 +219,17 @@ for cap in captions:
         if phrase not in search_words:
             search_words.append(phrase)
 
-print(f"\n--- STEP 2: Search words the program made by itself ---")
-print(f"  {search_words}")
+blip_word_count = len(search_words)
+
+# Phase 1f: also search for every everyday object in the built-in list,
+# so small things BLIP forgot to mention still get a chance to be found.
+for obj in COMMON_OBJECTS:
+    if obj not in search_words:
+        search_words.append(obj)
+
+print(f"\n--- STEP 2: Search words ---")
+print(f"  {blip_word_count} from BLIP + {len(COMMON_OBJECTS)} built-in "
+      f"= {len(search_words)} total to search for")
 
 # ---------- STEP 3: OWL-ViT finds a box for each search word ----------
 print("\n--- STEP 3: OWL-ViT hunts for each word ---")

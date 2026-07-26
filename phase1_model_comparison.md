@@ -305,3 +305,52 @@ A ~29% F1 for a first hand-built pipeline is an honest starting point.
 **PHASE 1 IS COMPLETE:** the pipeline now sees objects, locates them,
 describes actions, reasons about affordances, AND measures its own
 accuracy. Next up: Phase 2 (video — understanding change over time).
+
+---
+
+# Improving the Baseline (Phase 1f) — Measure, Change, Measure Again
+
+Now that I had a baseline (29% F1), I could actually try to BEAT it and
+prove whether my changes helped. I made two changes to perceive.py:
+
+1. **Added a built-in list of ~50 everyday objects** (knife, pencil, cup,
+   cucumber...) that OWL-ViT ALWAYS searches for, on top of BLIP's words.
+   Goal: catch small objects BLIP forgets to mention -> raise RECALL.
+2. **Added filters** for scene-words ("kitchen", "counter" — you can't
+   pick up a kitchen), action-phrases ("cutting vegetables"), and BLIP's
+   "arafed" glitch. Goal: fewer wrong guesses -> raise PRECISION.
+
+**The results (before -> after):**
+
+| Photo | F1 before | F1 after |
+|---|---|---|
+| test_image1 | 37% | 50% |
+| cooking | 34% | 58% |
+| legos | 17% | 18% |
+| **Average** | **29%** | **42%** |
+
+Average **recall nearly doubled: 22% -> 44%.** F1 jumped 29% -> 42%.
+That's a real, measured 13-point improvement.
+
+**What I learned:**
+
+- **The built-in list was the big win.** It found objects the old version
+  missed entirely: knife, cucumber, lettuce, pepper, pumpkin (cooking),
+  and eraser + pen (test_image1). If you never look for something, you
+  can never find it.
+- **The precision/recall trade-off showed up AGAIN** (3rd time now!).
+  On the cooking photo, casting a wider net also caught junk (tomato,
+  fork, pan that weren't there), so precision dipped 56% -> 50%. But
+  recall rose so much (25% -> 70%) that F1 still climbed.
+- **Some images are just hard.** The legos photo barely improved (17% ->
+  18%). Even with "toy blocks" and "chair" in the search list, OWL-ViT
+  couldn't confidently find them — blurry white background, scattered
+  ambiguous blocks. No prompt trick fixes a model's eyesight. (Its truth
+  list also had non-objects like "smile" that can never be detected.)
+- **This is THE research loop:** baseline -> change one thing -> measure ->
+  keep what helped. I can now say exactly how much my change improved
+  things, instead of guessing.
+
+**Ideas to push it further:** raise OWL-ViT's confidence cutoff to trade
+some recall back for precision (and measure it!); shrink the built-in
+list to the objects that actually helped; or upgrade to a bigger OWL-ViT.

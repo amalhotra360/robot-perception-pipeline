@@ -100,6 +100,6 @@ it runs on a regular laptop, just takes a minute or two per photo.
 - [x] Phase 1c: action recognition ("the person is cutting onions")
 - [x] Phase 1d: affordances — what could a robot *do* with each object? (local LLM reasoning)
 - [x] Phase 1e: evaluation — precision/recall/F1 against ground truth (baseline: ~29% F1)
-- [ ] Phase 1f: improve the baseline — give OWL-ViT a built-in object list so it stops missing small objects, filter out non-object words ("kitchen", "arafed"), then re-run evaluate.py and measure the gain
+- [x] Phase 1f: improve the baseline — added a built-in object list + scene-word filters; measured F1 gain from **29% → 42%** (recall 22% → 44%)
 - [ ] Phase 2: video — understanding how scenes change over time
 - [ ] Phase 3: simulation (PyBullet) — perception driving a virtual robot arm

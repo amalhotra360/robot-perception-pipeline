@@ -172,6 +172,21 @@ Known weaknesses (found by testing):
 - 2D boxes can't tell "inside" from "in front of" (no depth in a photo) —
   it said "the knife is on/inside the man" because he leans over the table
 
+Phase 1f additions (raising the accuracy):
+- **COMMON_OBJECTS** — a built-in list of ~50 everyday objects. STEP 2 now
+  adds all of these to the search words, so OWL-ViT looks for them even if
+  BLIP never mentioned them. This is what raised recall (found the knife,
+  cucumber, eraser, pen the old version missed).
+- **SCENE_WORDS** — a set of place-words ("kitchen", "counter") that get
+  filtered out in caption_to_phrases, because you can't grab a room.
+- **ACTION_VERBS** — if a phrase starts with one of these ("cutting",
+  "playing"...), it's an action not an object, so it's skipped. Careful
+  detail: "building blocks" survives because "building" isn't in the set.
+- **The "arafed" fix** — `text.replace('arafed', '')` deletes BLIP's
+  known garbled-word glitch before anything else.
+- All of these are just Python `set` membership checks (`x in SCENE_WORDS`)
+  and list-building — no new AI, just smarter glue code.
+
 New in the Phase 1d update: perceive.py now also SAVES its results to
 `perception_<photo>.json` using `json.dump(report, f)` — turning Python
 dicts/lists into a text file another program can read later.
