@@ -85,6 +85,9 @@ it runs on a regular laptop, just takes a minute or two per photo.
 | `perceive.py` | **The main pipeline** — objects + boxes + relationships + actions (saves scene facts to JSON) |
 | `affordances.py` | **The robot's reasoning brain** — a free local LLM (Qwen 2.5) reads the scene facts and plans what a robot could do |
 | `evaluate.py` | **Scoring** — compares detections against a hand-written answer key and reports precision / recall / F1 |
+| `video_perceive.py` | **Video (2a)** — runs the detector on frames sampled from a video |
+| `video_changes.py` | **Video (2b)** — reports what appears / disappears / changes between frames |
+| `video_story.py` | **Video (2c)** — a local LLM narrates the video's story from the frame-by-frame facts |
 | `truth_*.txt` | Ground-truth answer keys (what's really in each photo) |
 | `auto_detect.py` | My own experimental take on the BLIP → OWL-ViT idea (creative captions + regex word extraction) |
 | `detect_objects_and_actions.py` | Earlier version: YOLO + CLIP fact-checking + BLIP |
@@ -101,5 +104,8 @@ it runs on a regular laptop, just takes a minute or two per photo.
 - [x] Phase 1d: affordances — what could a robot *do* with each object? (local LLM reasoning)
 - [x] Phase 1e: evaluation — precision/recall/F1 against ground truth (baseline: ~29% F1)
 - [x] Phase 1f: improve the baseline — added a built-in object list + scene-word filters; measured F1 gain from **29% → 42%** (recall 22% → 44%)
-- [ ] Phase 2: video — understanding how scenes change over time
+- [~] Phase 2: video — understanding how scenes change over time
+  - [x] 2a: run the detector on video frames (`video_perceive.py`)
+  - [x] 2b: detect what appears / disappears / changes between frames (`video_changes.py`)
+  - [x] 2c: have the language model narrate the video's story (`video_story.py`)
 - [ ] Phase 3: simulation (PyBullet) — perception driving a virtual robot arm

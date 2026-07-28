@@ -18,3 +18,10 @@ __pycache__/
 
 # Saved scene facts (derived from the photos, so also kept out)
 perception_*.json
+video_perception_*.json
+
+# Video files (large binaries + test artifacts)
+*.mp4
+*.mov
+*.avi
+*.webm

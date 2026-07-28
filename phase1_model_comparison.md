@@ -354,3 +354,48 @@ That's a real, measured 13-point improvement.
 **Ideas to push it further:** raise OWL-ViT's confidence cutoff to trade
 some recall back for precision (and measure it!); shrink the built-in
 list to the objects that actually helped; or upgrade to a bigger OWL-ViT.
+
+---
+
+# PHASE 2 — Video (Understanding Change Over Time)
+
+The big idea: **a video is just many photos ("frames") played fast.** So
+I already know how to understand each frame — my whole Phase 1 pipeline.
+Video adds ONE new superpower: comparing frames to see what CHANGED.
+
+**Step 2a (video_perceive.py)** — grab a few frames spread across a video
+and run the detector on each. New tool: OpenCV (`cv2`) to read videos.
+Big gotcha I learned: OpenCV loads colors as BGR (blue first), but our
+models expect RGB (red first) — you must convert, or everything looks
+blue and detection fails.
+
+**Step 2b (video_changes.py)** — compare each frame to the one before it:
+- object in the new frame but not the old one = APPEARED
+- object in the old frame but not the new one = DISAPPEARED
+- plus: did the action change?
+
+**The neat realization:** once perception has turned messy pixels into
+clean word-lists, understanding "change" is just SET MATH — no AI needed.
+`after - before` = what appeared. This is exactly WHY the pipeline saves
+structured facts (JSON): reasoning becomes easy when the data is clean.
+Perception is the hard part; reasoning on clean facts is simple.
+
+**Tested on a stand-in video** (my 3 photos stitched together): it
+correctly saw the desk objects vanish and the kitchen appear, and the
+action switch from "cutting vegetables" to "playing with blocks". Because
+the 3 scenes are unrelated, everything "came and went" — in a real
+continuous clip, most objects stay put and only a few change, and THOSE
+are the story ("the onion was whole, now it's chopped").
+
+**Step 2c (video_story.py)** — feed the frame-by-frame facts to the local
+language model (Qwen, the same brain as affordances.py) and ask it to
+narrate the video in plain English, focusing on what CHANGED. This closes
+the video loop: pixels -> per-frame facts -> changes -> a written story.
+
+**The whole Phase 2 pipeline:**
+  video -> video_perceive.py (facts per frame)
+        -> video_changes.py  (what changed)
+        -> video_story.py    (a plain-English story)
+
+**Next:** run it all on a REAL recorded clip (something actually changing,
+like chopping an onion) for the genuine payoff.

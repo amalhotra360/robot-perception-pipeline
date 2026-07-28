@@ -187,6 +187,66 @@ Phase 1f additions (raising the accuracy):
 - All of these are just Python `set` membership checks (`x in SCENE_WORDS`)
   and list-building — no new AI, just smarter glue code.
 
+### video_perceive.py — running the detector on a VIDEO (Phase 2a)
+What it does: a video is just many photos ("frames"). This opens a video,
+grabs a few frames spread across it, and runs the object+action detector
+on each one.
+
+The new ideas in this file:
+
+- **`cv2.VideoCapture(path)`** — OpenCV's tool for reading a video file.
+- **`cap.get(cv2.CAP_PROP_FRAME_COUNT)`** — how many frames total;
+  `CAP_PROP_FPS` = frames per second. total / fps = length in seconds.
+- **Evenly spaced sampling:** `int(total * (i+0.5)/N)` picks N frame
+  numbers centered in equal chunks — so we look across the WHOLE video,
+  not just the start.
+- **`cap.set(cv2.CAP_PROP_POS_FRAMES, idx)` then `cap.read()`** — jump to
+  a specific frame and grab it.
+- **The BGR→RGB gotcha:** OpenCV loads colors as Blue-Green-Red, but PIL
+  and our models expect Red-Green-Blue. `cv2.cvtColor(frame,
+  cv2.COLOR_BGR2RGB)` fixes it. (Skip this and everyone looks blue!)
+- **`Image.fromarray(rgb)`** — turn the raw pixel grid into a PIL image
+  our models understand.
+- Speed choice: per frame it captions the WHOLE image only (not the
+  4-quarter trick) because a video has many frames — we lean on the
+  built-in COMMON_OBJECTS list to still catch small things.
+- Saves every frame's facts to video_perception_<name>.json.
+
+### video_changes.py — what CHANGED between frames (Phase 2b)
+What it does: reads the saved per-frame facts and reports the timeline of
+changes — this is the actual "video understanding" part.
+
+The new ideas in this file:
+
+- **Sets make comparison easy.** Each frame's objects become a Python
+  `set` of names. Then:
+  - `after - before` = objects that APPEARED (in new frame, not old)
+  - `before - after` = objects that DISAPPEARED
+  (`-` on sets means "in the first but not the second".)
+- **`set.intersection(*lists)`** = objects in EVERY frame (always there).
+- **`set.union(*lists)`** = every object seen at any point.
+  union minus intersection = the things that came and went.
+- No AI here at all — once perception turned pixels into clean word-sets,
+  understanding change is just set math. (This is WHY we save structured
+  facts: reasoning is easy when the data is clean.)
+
+### video_story.py — the language model narrates the video (Phase 2c)
+What it does: reads the per-frame facts, builds a written timeline, and
+asks the local Qwen model to tell the story of what happened over time.
+
+The new ideas in this file:
+
+- **Building a timeline string** — loops over the frames and writes one
+  line each ("At 3.0s — objects: ... Action: ..."), and for each frame
+  after the first, notes what appeared/disappeared vs the previous one
+  (same set math as video_changes.py).
+- **Same LLM pattern as affordances.py** — apply_chat_template, generate,
+  slice off the prompt, decode. (Reusing a pattern you already know is a
+  good sign your code is well-shaped.)
+- **The prompt asks for a STORY, not a list** — "tell the story of what
+  happened, focus on what CHANGED" — so the model narrates instead of
+  repeating the objects. Prompt wording steers the answer.
+
 New in the Phase 1d update: perceive.py now also SAVES its results to
 `perception_<photo>.json` using `json.dump(report, f)` — turning Python
 dicts/lists into a text file another program can read later.
