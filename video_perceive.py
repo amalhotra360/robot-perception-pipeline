@@ -27,7 +27,7 @@ import json
 import sys
 import cv2
 import torch
-from PIL import Image
+from PIL import Image, ImageDraw
 from transformers import (
     BlipProcessor, BlipForConditionalGeneration,
     OwlViTProcessor, OwlViTForObjectDetection,
@@ -169,8 +169,8 @@ def analyze_frame(image):
        any(o['name'] in PERSON_WORDS for o in objects):
         action = blip_describe(image, starter_text="the person is")
 
-    return {'scene': scene, 'action': action,
-            'objects': [{'name': o['name'], 'where': o['where']} for o in objects]}
+    # keep the boxes too, so the caller can draw them on the frame
+    return {'scene': scene, 'action': action, 'objects': objects}
 
 
 # ---------- Open the video and pick which frames to look at ----------
@@ -184,6 +184,9 @@ fps = cap.get(cv2.CAP_PROP_FPS) or 30
 duration = total / fps
 print(f"🎬 {video_path}: {total} frames, {fps:.0f} fps, {duration:.1f} seconds")
 print(f"   Sampling {num_frames} frames spread across the video\n")
+
+# short name of the video, used for the output file names
+name = video_path.split('/')[-1].rsplit('.', 1)[0]
 
 # evenly spaced frame numbers (the +0.5 centers them in each chunk)
 indices = [int(total * (i + 0.5) / num_frames) for i in range(num_frames)]
@@ -203,18 +206,29 @@ for order, idx in enumerate(indices, 1):
     facts = analyze_frame(pil)
     facts['frame'] = order
     facts['time_sec'] = round(t, 1)
-    report.append(facts)
 
+    # draw the boxes on this frame and save it so we can SEE the result
+    drawn = pil.copy()
+    pen = ImageDraw.Draw(drawn)
+    colors = ['red', 'lime', 'deepskyblue', 'yellow', 'magenta', 'orange', 'cyan']
+    for k, o in enumerate(facts['objects']):
+        left, top, right, bottom = o['box']
+        pen.rectangle([left, top, right, bottom], outline=colors[k % len(colors)], width=3)
+        pen.text((left + 4, max(0, top - 12)), o['name'], fill=colors[k % len(colors)])
+    frame_path = f"videoframe_{name}_{order}.jpg"
+    drawn.save(frame_path)
+
+    report.append(facts)
     print(f"  scene:   \"{facts['scene']}\"")
     print(f"  objects: {', '.join(o['name'] for o in facts['objects']) or '(none)'}")
     if facts['action']:
         print(f"  action:  \"{facts['action']}\"")
+    print(f"  🖼️  saved frame with boxes: {frame_path}")
     print()
 
 cap.release()
 
 # ---------- Save all frames' facts ----------
-name = video_path.split('/')[-1].rsplit('.', 1)[0]
 out_path = f"video_perception_{name}.json"
 with open(out_path, 'w') as f:
     json.dump({'video': video_path, 'frames': report}, f, indent=2)
